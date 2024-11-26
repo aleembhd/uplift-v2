@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Feedback App</title>
+    <!-- Add favicon -->
+    <link rel="icon" href="images/favicon.png" type="image/x-icon">
+    <link rel="apple-touch-icon" href="images/favicon.png">
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Add this line for Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Add these lines right after the existing meta tags -->
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/logo.png">
+    <style>
+        :root {
+            --primary-color: #000000;
+            --secondary-color: #ffffff;
+            --accent-color: #808080;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            z-index: 1001;
+        }
+
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            z-index: 1002;
+        }
+
+        .bar {
+            width: 100%;
+            height: 4px;
+            background-color: var(--secondary-color);
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.open .bar:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .hamburger.open .bar:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.open .bar:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+
+        .nav-menu {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding-top: 4rem; /* Adjusted padding to move links down */
+            padding-left: 1rem;
+            transition: left 0.3s ease;
+            z-index: 1000;
+        }
+
+        .nav-menu a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-size: 1.2rem;
+            margin: 1rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .nav-menu a:hover {
+            color: var(--accent-color);
+        }
+
+        .separator {
+            width: 80%;
+            height: 1px;
+            background-color: var(--secondary-color);
+            margin: 1rem 0;
+        }
+
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .logo {
+            max-width: 150px;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .quote {
+            font-size: 1rem;
+            font-style: italic;
+            margin-bottom: 2rem;
+            color: var(--accent-color);
+        }
+
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .btn {
+            width: 80%;
+            padding: 15px;
+            background-color: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            background-color: #fff;
+            color: #000;
+        }
+
+        /* Cool ripple effect */
+        .btn:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(25, 25);
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: scale(40, 40);
+            }
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--accent-color);
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+ 
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 2;
+        }
+
+        @media (min-width: 480px) {
+            .logo {
+                max-width: 200px;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .quote {
+                font-size: 1.2rem;
+            }
+
+            .btn-container {
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            .btn {
+                width: auto;
+                min-width: 200px;
+                white-space: nowrap;
+                padding: 15px 25px;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        .password-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 0.8rem 2.5rem 0.8rem 0.8rem;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #000000;
+            font-size: 1.2rem;
+        }
+
+        .remember-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .remember-container input {
+            margin-right: 0.5rem;
+        }
+
+        .submit-btn {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .credential-input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--accent-color);
+            border-radius: 5px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #000000;
+            font-size: 1.2rem;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            .btn-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 80%;
+                margin: 10px 0;
+                padding: 15px;
+                background-color: #000;
+                color: #fff;
+                border: 2px solid #fff;
+                border-radius: 30px;
+                transition: all 0.3s ease; 
+            }
+
+            .btn:active {
+                transform: scale(0.95);
+                background-color: #fff;
+                color: #000;
+            }
+
+            /* Cool ripple effect */
+            .btn {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .btn:after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 5px;
+                height: 5px;
+                background: rgba(255, 255, 255, 0.5);
+                opacity: 0;
+                border-radius: 100%;
+                transform: scale(1, 1) translate(-50%);
+                transform-origin: 50% 50%;
+            }
+
+            @keyframes ripple {
+                0% {
+                    transform: scale(0, 0);
+                    opacity: 1;
+                }
+                20% {
+                    transform: scale(25, 25);
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0;
+                    transform: scale(40, 40);
+                }
+            }
+
+            .btn:focus:not(:active)::after {
+                animation: ripple 1s ease-out;
+            }
+        }
+
+        .manager-button-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        .name-edit-input {
+            width: 80% !important;
+            padding: 8px 12px !important;
+            border: 2px solid #000 !important;
+            border-radius: 5px !important;
+            font-size: 16px !important;
+            color: #000 !important;
+            background: #fff !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+        }
+        
+        .name-edit-input:focus {
+            outline: none !important;
+            border-color: #808080 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+        }
+        
+        .edit-icon {
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        
+        .edit-icon:hover {
+            opacity: 1;
+        }
+        
+        .manager-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .manager-btn:hover {
+            background: #333;
+            transform: translateY(-1px);
+        }
+        
+        .edit-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            right: 35px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .edit-icon:hover + .edit-tooltip {
+            opacity: 1;
+        }
+
+        .save-button {
+            background: black;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .save-button:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        .save-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="hamburger" id="hamburger">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+        <div class="nav-menu" id="navMenu">
+            <a href="about.html">About</a>
+            <div class="separator"></div>
+            <a href="help.html">Help</a>
+        </div>
+    </div>
+    <div class="container">
+        <!-- <img src="images/logo.png" alt="Company Logo" class="logo"> -->
+        <h1>Welcome</h1>
+        <p class="quote" id="motivationalQuote"></p>
+        <div class="btn-container">
+            <button class="btn" id="telecallerBtn"><span>Telecaller</span></button>
+            <button class="btn" id="marketingManagerBtn"><span>Marketing Manager</span></button>
+        </div>
+    </div>
+
+
+    
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <button id="backBtn" class="back-btn" style="background-color: black; color: white; border: none; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">&larr; Back</button>
+            <h2 style="margin-bottom: 20px;">Login Details </h2>
+            <div class="input-container">
+                <input type="email" id="emailInput" class="credential-input" placeholder="Enter email">
+                <div class="password-container">
+                    <input type="password" id="passwordInput" class="credential-input" placeholder="Enter password">
+                    <span class="password-toggle" id="passwordToggle">👁️</span>
+                </div>
+            </div>
+            <div class="remember-container">
+                <input type="checkbox" id="rememberCheckbox">
+                <label for="rememberCheckbox">Remember me</label>
+            </div>
+            <button id="submitPassword" class="submit-btn">Submit</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyADbdw5KtrmjQT_5EBJ6kNzExx8kkTEkuc",
+            authDomain: "realestate-694f3.firebaseapp.com",
+            databaseURL: "https://realestate-694f3-default-rtdb.firebaseio.com",
+            projectId: "realestate-694f3",
+            storageBucket: "realestate-694f3.appspot.com",
+            messagingSenderId: "966861149434",
+            appId: "1:966861149434:web:8a57876a91c80bcf216543",
+            measurementId: "G-J68SDN99DV"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // Add this after Firebase initialization and before event listeners
+        const namesRef = firebase.database().ref('telecallerNames');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const quotes = [
+                "Build your dreams, one property at a time.",
+                "Real estate: Where passion meets prosperity.",
+                "Unlock potential in every square foot.",
+                "Your dream home awaits. Make it happen.",
+                "Turn bricks and mortar into golden opportunities.",
+                "Real estate success: Vision, action, determination.",
+                "Invest in land, they're not making more.",
+                "Transform lives through real estate excellence.",
+                "Create wealth, build legacies through property.",
+                "Real estate: The cornerstone of financial freedom."
+            ];
+
+            const quoteElement = document.getElementById('motivationalQuote');
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            quoteElement.textContent = randomQuote;
+
+            const telecallerBtn = document.getElementById('telecallerBtn');
+            const marketingManagerBtn = document.getElementById('marketingManagerBtn');
+            const modal = document.getElementById('passwordModal');
+            const emailInput = document.getElementById('emailInput');
+            const passwordInput = document.getElementById('passwordInput');
+            const rememberCheckbox = document.getElementById('rememberCheckbox');
+            const submitPassword = document.getElementById('submitPassword');
+            const passwordToggle = document.getElementById('passwordToggle');
+            const backBtn = document.getElementById('backBtn');
+            const hamburger = document.getElementById('hamburger');
+            const navMenu = document.getElementById('navMenu');
+
+            let currentRole = '';
+
+            telecallerBtn.addEventListener('click', function() {
+                showTelecallerSelectionModal();
+            });
+
+            marketingManagerBtn.addEventListener('click', function() {
+                currentRole = 'manager';
+                showLoginModal('Admin Login Details');
+            });
+
+            function showLoginModal(title) {
+                modal.style.display = 'block';
+                document.querySelector('.modal-content h2').textContent = title;
+                
+                if (currentRole === 'manager') {
+                    // Check if manager credentials were previously remembered
+                    const rememberedEmail = localStorage.getItem('rememberedManagerEmail');
+                    const rememberedPassword = localStorage.getItem('rememberedManagerPassword');
+                    
+                    if (rememberedEmail && rememberedPassword) {
+                        emailInput.value = rememberedEmail;
+                        passwordInput.value = rememberedPassword;
+                        rememberCheckbox.checked = true;
+                    } else {
+                        emailInput.value = '';
+                        passwordInput.value = '';
+                        rememberCheckbox.checked = false;
+                    }
+                } else {
+                    if (localStorage.getItem(`remembered${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}Email`)) {
+                        emailInput.value = localStorage.getItem(`remembered${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}Email`);
+                        passwordInput.value = localStorage.getItem(`remembered${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}Password`);
+                        rememberCheckbox.checked = true;
+                    } else {
+                        emailInput.value = '';
+                        passwordInput.value = '';
+                        rememberCheckbox.checked = false;
+                    }
+                }
+            }
+
+            submitPassword.addEventListener('click', async function() {
+                submitPassword.disabled = true;
+                submitPassword.style.backgroundColor = '#808080';
+                submitPassword.textContent = 'Logging in...';
+                
+                const email = emailInput.value;
+                const password = passwordInput.value;
+
+                try {
+                    if (currentRole === 'manager' && email === 'admin@gmail.com' && password === 'admin@123') {
+                        // Only store admin credentials if remember me is checked
+                        if (rememberCheckbox.checked) {
+                            localStorage.setItem('rememberedManagerEmail', 'admin@gmail.com');
+                            localStorage.setItem('rememberedManagerPassword', 'admin@123');
+                        } else {
+                            localStorage.removeItem('rememberedManagerEmail');
+                            localStorage.removeItem('rememberedManagerPassword');
+                        }
+                        showManagerSelectionModal();
+                        modal.style.display = 'none';
+                    } else {
+                        alert("Invalid credentials. Access denied.");
+                    }
+                } catch (error) {
+                    alert("Invalid credentials. Access denied.");
+                } finally {
+                    submitPassword.disabled = false;
+                    submitPassword.style.backgroundColor = '';
+                    submitPassword.textContent = 'Submit';
+                }
+            });
+
+            function handleSuccessfulLogin(email, role) {
+                if (role === 'manager') {
+                    // Only store admin credentials if remember me is checked
+                    if (rememberCheckbox.checked && email === 'admin@gmail.com') {
+                        localStorage.setItem('rememberedManagerEmail', 'admin@gmail.com');
+                        localStorage.setItem('rememberedManagerPassword', 'admin@123');
+                    } else if (!rememberCheckbox.checked) {
+                        localStorage.removeItem('rememberedManagerEmail');
+                        localStorage.removeItem('rememberedManagerPassword');
+                    }
+                }
+                
+                if (role === 'telecaller') {
+                    localStorage.setItem('telecallerEmail', email);
+                    window.open('dialpad.html', '_blank');
+                } else if (role === 'manager') {
+                    localStorage.setItem('adminEmail', email);
+                    localStorage.setItem('isManager', 'true');
+                    window.open('maindashboard.html', '_blank');
+                }
+            }
+
+            passwordToggle.addEventListener('click', function() {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    passwordToggle.textContent = '🔒';
+                } else {
+                    passwordInput.type = 'password';
+                    passwordToggle.textContent = '👁️';
+                }
+            });
+
+            backBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+                // Only clear the input fields, don't remove from localStorage
+                emailInput.value = '';
+                passwordInput.value = '';
+            });
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+            hamburger.addEventListener('click', function(event) {
+                event.stopPropagation(); // Prevent the click from propagating to the window
+                toggleMenu();
+            });
+
+            function toggleMenu() {
+                navMenu.classList.toggle('open');
+                hamburger.classList.toggle('open');
+            }
+
+            // Close the menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!navMenu.contains(event.target) && !hamburger.contains(event.target)) {
+                    navMenu.classList.remove('open');
+                    hamburger.classList.remove('open');
+                }
+            });
+
+            // Prevent clicks inside the menu from closing it
+            navMenu.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+
+            // Define editStyles here so it's available to both modals
+            const editStyles = `
+                <style>
+                    .modal-content {
+                        position: relative;
+                        background: white;
+                        border-radius: 10px;
+                        padding: 2rem;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .modal-content h2 {
+                        font-size: 1.8rem;
+                        color: black;
+                        text-align: center;
+                        margin-bottom: 25px;
+                        font-weight: 600;
+                        letter-spacing: 0.5px;
+                        padding-top: 25px;
+                    }
+
+                    .manager-btn {
+                        width: 100%;
+                        padding: 15px 25px;
+                        border: none;
+                        border-radius: 13px;
+                        background: black;
+                        color: white;
+                        font-size: 1.3rem;
+                        cursor: pointer;
+                        transition: transform 0.2s ease;
+                        display: flex;
+                        align-items: center;
+                    }
+
+                    .button-number {
+                        margin-right: 15px;
+                        font-weight: bold;
+                        opacity: 0.8;
+                        color: white;
+                    }
+
+                    .manager-btn:hover {
+                        transform: scale(1.02);
+                        opacity: 0.9;
+                    }
+
+                    .manager-btn:active {
+                        transform: scale(0.98);
+                    }
+
+                    .back-button {
+                        background: black !important;
+                        color: white !important;
+                    }
+
+                    .edit-tooltip {
+                        display: none;
+                    }
+                </style>
+            `;
+
+            function showManagerSelectionModal() {
+                const managerModal = document.createElement('div');
+                managerModal.className = 'modal';
+                managerModal.style.display = 'block';
+                
+                managerModal.innerHTML = `
+                    ${editStyles}
+                    <div class="modal-content">
+                        <button class="back-button" style="position: absolute; top: 15px; left: 15px; background: black; border: none; cursor: pointer; color: white; font-size: 16px; font-weight: 500; padding: 5px 10px; border-radius: 5px;">
+                            ← Back
+                        </button>
+                        <h2>Select Telecaller</h2>
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div class="manager-button-container">
+                                <button id="rameshBtn" class="manager-btn">
+                                    <span class="button-number">1.</span>
+                                    <span id="rameshName"></span>
+                                </button>
+                                <span class="edit-icon" id="editRamesh">
+                                    <img src="images/editicon.png" alt="Edit" style="width: 33px; height: 33px;">
+                                </span>
+                            </div>
+                            <div class="manager-button-container">
+                                <button id="sureshBtn" class="manager-btn">
+                                    <span class="button-number">2.</span>
+                                    <span id="sureshName"></span>
+                                </button>
+                                <span class="edit-icon" id="editSuresh">
+                                    <img src="images/editicon.png" alt="Edit" style="width: 33px; height: 33px;">
+                                </span>
+                            </div>
+                            <div class="manager-button-container">
+                                <button id="admin3Btn" class="manager-btn">
+                                    <span class="button-number">3.</span>
+                                    <span id="admin3Name"></span>
+                                </button>
+                                <span class="edit-icon" id="editAdmin3">
+                                    <img src="images/editicon.png" alt="Edit" style="width: 33px; height: 33px;">
+                                </span>
+                            </div>
+                            <div class="manager-button-container">
+                                <button id="admin4Btn" class="manager-btn">
+                                    <span class="button-number">4.</span>
+                                    <span id="admin4Name"></span>
+                                </button>
+                                <span class="edit-icon" id="editAdmin4">
+                                    <img src="images/editicon.png" alt="Edit" style="width: 33px; height: 33px;">
+                                </span>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <button class="save-button">Save</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(managerModal);
+
+                // First, create a reference to the names in Firebase
+                const namesRef = firebase.database().ref('telecallerNames');
+
+                function makeEditable(nameId, editId) {
+                    const nameSpan = document.getElementById(nameId);
+                    const editIcon = document.getElementById(editId);
+                    
+                    editIcon.addEventListener('click', () => {
+                        const currentName = nameSpan.textContent;
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = currentName;
+                        input.className = 'name-edit-input';
+                        input.placeholder = 'Enter name...';
+                        
+                        nameSpan.style.opacity = '0';
+                        setTimeout(() => {
+                            nameSpan.replaceWith(input);
+                            input.focus();
+                        }, 200);
+
+                        const saveChanges = () => {
+                            const newName = input.value.trim() || currentName;
+                            nameSpan.textContent = newName;
+                            
+                            input.style.opacity = '0';
+                            setTimeout(() => {
+                                input.replaceWith(nameSpan);
+                                nameSpan.style.opacity = '1';
+                            }, 200);
+                            
+                            // Use formal field names in Firebase
+                            const fieldName = nameId === 'rameshName' ? 'telecallerOne' : 
+                                            nameId === 'sureshName' ? 'telecallerTwo' :
+                                            nameId === 'admin3Name' ? 'telecallerThree' : 'telecallerFour';
+                            namesRef.child(fieldName).set(newName)
+                                .then(() => console.log('Name updated successfully'))
+                                .catch(error => console.error('Error updating name:', error));
+                        };
+
+                        input.addEventListener('blur', saveChanges);
+                        input.addEventListener('keyup', (e) => {
+                            if (e.key === 'Enter') saveChanges();
+                            if (e.key === 'Escape') {
+                                input.value = currentName;
+                                input.blur();
+                            }
+                        });
+                    });
+
+                    // Load names using formal field names
+                    const fieldName = nameId === 'rameshName' ? 'telecallerOne' : 
+                                     nameId === 'sureshName' ? 'telecallerTwo' :
+                                     nameId === 'admin3Name' ? 'telecallerThree' : 'telecallerFour';
+                    namesRef.child(fieldName).once('value', snapshot => {
+                        const savedName = snapshot.val();
+                        if (savedName) {
+                            nameSpan.textContent = savedName;
+                        }
+                    });
+                }
+
+                // Make all names editable
+                makeEditable('rameshName', 'editRamesh');
+                makeEditable('sureshName', 'editSuresh');
+                makeEditable('admin3Name', 'editAdmin3');
+                makeEditable('admin4Name', 'editAdmin4');
+                
+                // Add click handlers for all buttons
+                document.getElementById('rameshBtn').addEventListener('click', async () => {
+                    try {
+                        const userCredential = await firebase.auth().signInWithEmailAndPassword('admin1@gmail.com', 'admin@123');
+                        localStorage.setItem('selectedTelecaller', 'telecaller1@gmail.com');
+                        localStorage.setItem('selectedManagerName', document.getElementById('rameshName').textContent);
+                        handleSuccessfulLogin('admin1@gmail.com', 'manager');
+                        managerModal.remove();
+                    } catch (error) {
+                        alert("Authentication failed");
+                    }
+                });
+                
+                document.getElementById('sureshBtn').addEventListener('click', async () => {
+                    try {
+                        const userCredential = await firebase.auth().signInWithEmailAndPassword('admin2@gmail.com', 'admin@123');
+                        localStorage.setItem('selectedTelecaller', 'telecaller2@gmail.com');
+                        localStorage.setItem('selectedManagerName', document.getElementById('sureshName').textContent);
+                        handleSuccessfulLogin('admin2@gmail.com', 'manager');
+                        managerModal.remove();
+                    } catch (error) {
+                        alert("Authentication failed");
+                    }
+                });
+
+                document.getElementById('admin3Btn').addEventListener('click', async () => {
+                    try {
+                        const userCredential = await firebase.auth().signInWithEmailAndPassword('admin3@gmail.com', 'admin@123');
+                        localStorage.setItem('selectedTelecaller', 'telecaller3@gmail.com');
+                        localStorage.setItem('selectedManagerName', document.getElementById('admin3Name').textContent);
+                        handleSuccessfulLogin('admin3@gmail.com', 'manager');
+                        managerModal.remove();
+                    } catch (error) {
+                        alert("Authentication failed");
+                    }
+                });
+
+                document.getElementById('admin4Btn').addEventListener('click', async () => {
+                    try {
+                        const userCredential = await firebase.auth().signInWithEmailAndPassword('admin4@gmail.com', 'admin@123');
+                        localStorage.setItem('selectedTelecaller', 'telecaller4@gmail.com');
+                        localStorage.setItem('selectedManagerName', document.getElementById('admin4Name').textContent);
+                        handleSuccessfulLogin('admin4@gmail.com', 'manager');
+                        managerModal.remove();
+                    } catch (error) {
+                        alert("Authentication failed");
+                    }
+                });
+
+                // Add back button click handler
+                managerModal.querySelector('.back-button').addEventListener('click', () => {
+                    managerModal.remove();
+                });
+
+                // Add save button click handler
+                managerModal.querySelector('.save-button').addEventListener('click', async () => {
+                    try {
+                        const names = {
+                            telecallerOne: document.getElementById('rameshName').textContent,
+                            telecallerTwo: document.getElementById('sureshName').textContent,
+                            telecallerThree: document.getElementById('admin3Name').textContent,
+                            telecallerFour: document.getElementById('admin4Name').textContent
+                        };
+                        
+                        await namesRef.update(names);
+                        alert('Names saved successfully!');
+                    } catch (error) {
+                        console.error('Error saving names:', error);
+                        alert('Failed to save names. Please try again.');
+                    }
+                });
+            }
+
+            function showTelecallerSelectionModal() {
+                namesRef.once('value')
+                    .then(snapshot => {
+                        const names = snapshot.val() || {};
+                        
+                        const telecallerModal = document.createElement('div');
+                        telecallerModal.className = 'modal';
+                        telecallerModal.style.display = 'block';
+                        
+                        telecallerModal.innerHTML = `
+                            ${editStyles}
+                            <div class="modal-content">
+                                <button class="back-button" style="position: absolute; top: 15px; left: 15px; background: black; border: none; cursor: pointer; color: white; font-size: 16px; font-weight: 500; padding: 5px 10px; border-radius: 5px;">
+                                    ← Back
+                                </button>
+                                <h2>Select Telecaller</h2>
+                                <div style="display: flex; flex-direction: column; gap: 20px;">
+                                    <div class="manager-button-container">
+                                        <button id="telecaller1Btn" class="manager-btn">
+                                            <span class="button-number">1.</span>
+                                            <span>${names.telecallerOne || 'Telecaller 1'}</span>
+                                        </button>
+                                    </div>
+                                    <div class="manager-button-container">
+                                        <button id="telecaller2Btn" class="manager-btn">
+                                            <span class="button-number">2.</span>
+                                            <span>${names.telecallerTwo || 'Telecaller 2'}</span>
+                                        </button>
+                                    </div>
+                                    <div class="manager-button-container">
+                                        <button id="telecaller3Btn" class="manager-btn">
+                                            <span class="button-number">3.</span>
+                                            <span>${names.telecallerThree || 'Telecaller 3'}</span>
+                                        </button>
+                                    </div>
+                                      <div class="manager-button-container">
+                                        <button id="telecaller4Btn" class="manager-btn">
+                                            <span class="button-number">4.</span>
+                                            <span>${names.telecallerFour || 'Telecaller 4'}</span>
+                                        </button>
+                                    </div> 
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(telecallerModal);
+
+                        // Existing button handlers remain unchanged
+                        document.getElementById('telecaller1Btn').addEventListener('click', () => {
+                            // Set localStorage and open new window immediately
+                            localStorage.setItem('telecallerEmail', 'telecaller1@gmail.com');
+                            const newWindow = window.open('dialpad.html', '_blank');
+                            
+                            // Perform authentication in the background
+                            firebase.auth().signInWithEmailAndPassword('telecaller1@gmail.com', 'telecaller@123')
+                                .then(() => {
+                                    telecallerModal.remove();
+                                })
+                                .catch(error => {
+                                    newWindow.close();
+                                    alert("Connection failed. Please try again.");
+                                });
+                        });
+
+                        document.getElementById('telecaller2Btn').addEventListener('click', () => {
+                            // Set localStorage and open new window immediately
+                            localStorage.setItem('telecallerEmail', 'telecaller2@gmail.com');
+                            const newWindow = window.open('dialpad.html', '_blank');
+                            
+                            // Perform authentication in the background
+                            firebase.auth().signInWithEmailAndPassword('telecaller2@gmail.com', 'telecaller@123')
+                                .then(() => {
+                                    telecallerModal.remove();
+                                })
+                                .catch(error => {
+                                    newWindow.close();
+                                    alert("Connection failed. Please try again.");
+                                });
+                        });
+
+                        // Add new button handlers for telecaller3 and telecaller4
+                        document.getElementById('telecaller3Btn').addEventListener('click', () => {
+                            // Set localStorage and open new window immediately
+                            localStorage.setItem('telecallerEmail', 'telecaller3@gmail.com');
+                            const newWindow = window.open('dialpad.html', '_blank');
+                            
+                            // Perform authentication in the background
+                            firebase.auth().signInWithEmailAndPassword('telecaller3@gmail.com', 'telecaller@123')
+                                .then(() => {
+                                    telecallerModal.remove();
+                                })
+                                .catch(error => {
+                                    newWindow.close();
+                                    alert("Connection failed. Please try again.");
+                                });
+                        });
+
+                        document.getElementById('telecaller4Btn').addEventListener('click', () => {
+                            // Set localStorage and open new window immediately
+                            localStorage.setItem('telecallerEmail', 'telecaller4@gmail.com');
+                            const newWindow = window.open('dialpad.html', '_blank');
+                            
+                            // Perform authentication in the background
+                            firebase.auth().signInWithEmailAndPassword('telecaller4@gmail.com', 'telecaller@123')
+                                .then(() => {
+                                    telecallerModal.remove();
+                                })
+                                .catch(error => {
+                                    newWindow.close();
+                                    alert("Connection failed. Please try again.");
+                                });
+                        });
+
+                        // Back button handler remains unchanged
+                        telecallerModal.querySelector('.back-button').addEventListener('click', () => {
+                            telecallerModal.remove();
+                        });
+                    });
+            }
+        });
+
+        // After successful login
+        function onSuccessfulLogin(email) {
+            localStorage.setItem('managerEmail', email);
+            // Redirect to maindashboard.html or perform other actions
+        }
+
+        // Example login function
+        function login(email, password) {
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Login successful
+                    const user = userCredential.user;
+                    onSuccessfulLogin(user.email);
+                })
+                .catch((error) => {
+                    // Handle login errors
+                    console.error('Login error:', error);
+                });
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            
+            // Show the install button or prompt
+            if (deferredPrompt) {
+                // Show install prompt
+                deferredPrompt.prompt();
+                
+                // Wait for the user to respond to the prompt
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        });
+
+        // If the app is already installed, hide the install prompt
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('App was installed');
+        });
+    </script>
+    
+    <footer style="position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8rem; color: var(--accent-color);">
+        &copy; 2024 All rights reserved.
+    </footer>
+</body>
+</html>
